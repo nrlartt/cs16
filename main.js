@@ -1,5 +1,21 @@
 // ========== MAIN CONTROLLER ==========
 let game = null;
+let playfunSDK = null;
+
+// Initialize Play.fun SDK
+try {
+    playfunSDK = new OpenGameSDK({
+        gameId: '5b221ece-b46a-4acd-b2ca-85b5ec22f0c1',
+        ui: { usePointsWidget: true },
+    });
+    playfunSDK.init().then(() => {
+        console.log('Play.fun SDK ready!');
+    }).catch(err => {
+        console.warn('Play.fun SDK init failed:', err);
+    });
+} catch (e) {
+    console.warn('Play.fun SDK not available:', e);
+}
 
 // Initialize pixel sprites on load
 window.addEventListener('DOMContentLoaded', () => {
@@ -64,6 +80,10 @@ function closeBuyMenu() {
 }
 
 function restartGame() {
+    // Save score to Play.fun before restart
+    if (playfunSDK && game) {
+        try { playfunSDK.savePoints(); } catch (e) { }
+    }
     document.getElementById('game-over-overlay').style.display = 'none';
     document.getElementById('round-end-overlay').style.display = 'none';
     document.getElementById('score-value').textContent = '0';
@@ -72,6 +92,10 @@ function restartGame() {
 }
 
 function backToMenu() {
+    // Save score to Play.fun before leaving
+    if (playfunSDK && game) {
+        try { playfunSDK.savePoints(); } catch (e) { }
+    }
     if (game) game.stop();
     game = null;
     document.getElementById('game-over-overlay').style.display = 'none';
@@ -79,6 +103,27 @@ function backToMenu() {
     document.getElementById('score-value').textContent = '0';
     showMainMenu();
 }
+
+// Sync points to Play.fun when scoring in-game
+function syncPlayfunScore(points) {
+    if (playfunSDK) {
+        try { playfunSDK.addPoints(points); } catch (e) { }
+    }
+}
+
+// Auto-save points every 30 seconds
+setInterval(() => {
+    if (playfunSDK && game && game.running) {
+        try { playfunSDK.savePoints(); } catch (e) { }
+    }
+}, 30000);
+
+// Save on page unload
+window.addEventListener('beforeunload', () => {
+    if (playfunSDK) {
+        try { playfunSDK.savePoints(); } catch (e) { }
+    }
+});
 
 function setCrosshairColor(btn) {
     document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));

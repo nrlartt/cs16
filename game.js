@@ -864,6 +864,8 @@ class Game {
     addScore(points, x, y, label, color) {
         this.score += points;
         this.scorePopups.push({ x, y, text: label, color, time: performance.now() });
+        // Sync to Play.fun
+        if (typeof syncPlayfunScore === 'function') syncPlayfunScore(points);
         // Update HUD score
         const el = document.getElementById('score-value');
         if (el) {
